@@ -51,7 +51,7 @@ wtr() {
   fi
 
   local branch="$1"
-  local dir_name="${2:-$(echo "$branch" | tr '/' '-')}"
+  local dir_name="${2:-${branch//\//-}}"
 
   git fetch origin "$branch" || { echo "Could not fetch origin/$branch"; return 1; }
   git worktree add --detach "$WT_DIR/$dir_name" "origin/$branch"
@@ -75,14 +75,14 @@ wtrm() {
   local keep_branch=false
   local force_delete=false
 
-  local flag="${2:-}"
-  if [ "$flag" = "-k" ]; then
-    keep_branch=true
-  elif [ "$flag" = "-f" ]; then
-    force_delete=true
-  fi
+  case "${2:-}" in
+    -k) keep_branch=true ;;
+    -f) force_delete=true ;;
+  esac
 
-  if git worktree remove "$WT_DIR/$name" && [ "$keep_branch" = false ]; then
+  git worktree remove "$WT_DIR/$name" || return 1
+
+  if [ "$keep_branch" = false ]; then
     if [ "$force_delete" = true ]; then
       git branch -D "$name" 2>/dev/null
     else
