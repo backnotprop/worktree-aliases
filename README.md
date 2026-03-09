@@ -22,9 +22,11 @@ source /path/to/worktree-aliases/worktree.sh
 | ------------------ | ---------------------------------------------------------------- |
 | `wtdir`            | Show the current worktree directory                              |
 | `wtdir <path>`     | Change the worktree directory for this session                   |
-| `wt <name>`        | Create a worktree + branch off `main`                            |
-| `wt <name> <base>` | Create a worktree + branch off a specific base                   |
-| `wtr <branch>`     | Review a remote branch in a detached worktree (no local branch)  |
+| `wt <name>`        | Create a worktree + branch off `main`, cd into it                |
+| `wt <name> <base>` | Create a worktree + branch off a specific base, cd into it       |
+| `wt -s <name>`     | Create a worktree + branch but stay in current directory         |
+| `wtr <branch>`     | Review a remote branch in a detached worktree, cd into it        |
+| `wtr -s <branch>`  | Review a remote branch but stay in current directory             |
 | `wtrm <name>`      | Remove a worktree and delete its branch                          |
 | `wtrm <name> -k`   | Remove a worktree but keep the branch                            |
 | `wtrm <name> -f`   | Remove a worktree and force-delete the branch (even if unmerged) |
@@ -38,7 +40,7 @@ source /path/to/worktree-aliases/worktree.sh
 
 ```bash
 wt fix-login
-cd ../fix-login
+# Now in ../fix-login with branch "fix-login" off main
 claude  # isolated session focused on this fix
 ```
 
@@ -46,11 +48,9 @@ claude  # isolated session focused on this fix
 
 ```bash
 wt experiment develop
-cd ../experiment
 claude  # work against develop instead of main
 
 wt spike HEAD
-cd ../spike
 claude  # try a different approach from your current commit
 ```
 
@@ -58,7 +58,7 @@ claude  # try a different approach from your current commit
 
 ```bash
 wtr feat/new-parser
-cd ../feat-new-parser
+# Now in ../feat-new-parser, detached — no local branch created
 claude  # review the code, run tests, leave comments
 
 wtrm feat-new-parser

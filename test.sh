@@ -115,7 +115,7 @@ assert_branch_not_exists() {
 # --- tests ---
 
 test_wt_basic() {
-  echo "test: wt <name> — create worktree off main"
+  echo "test: wt <name> — create worktree off main and cd into it"
   cd "$SANDBOX/main-repo"
 
   wt my-feature
@@ -123,8 +123,10 @@ test_wt_basic() {
   assert_dir_exists "worktree directory created" "$SANDBOX/my-feature"
   assert_branch_exists "branch created" "my-feature"
   assert_eq "worktree has file.txt" "hello" "$(cat "$SANDBOX/my-feature/file.txt")"
+  assert_eq "cd'd into worktree" "$SANDBOX/my-feature" "$(pwd)"
 
   # cleanup
+  cd "$SANDBOX/main-repo"
   wtrm my-feature
 }
 
@@ -141,6 +143,7 @@ test_wt_custom_base() {
   assert_branch_exists "branch created" "from-develop"
 
   # cleanup
+  cd "$SANDBOX/main-repo"
   wtrm from-develop
   git branch -d develop >/dev/null 2>&1
 }
@@ -155,7 +158,22 @@ test_wt_head() {
   assert_branch_exists "branch created" "from-head"
 
   # cleanup
+  cd "$SANDBOX/main-repo"
   wtrm from-head
+}
+
+test_wt_stay() {
+  echo "test: wt -s <name> — create worktree but stay in current directory"
+  cd "$SANDBOX/main-repo"
+
+  wt -s stay-test
+
+  assert_dir_exists "worktree directory created" "$SANDBOX/stay-test"
+  assert_branch_exists "branch created" "stay-test"
+  assert_eq "stayed in main repo" "$SANDBOX/main-repo" "$(pwd)"
+
+  # cleanup
+  wtrm stay-test
 }
 
 test_wt_no_args() {
@@ -175,18 +193,20 @@ test_wt_no_args() {
 }
 
 test_wtr_basic() {
-  echo "test: wtr <branch> — detached worktree from remote branch"
+  echo "test: wtr <branch> — detached worktree from remote branch and cd into it"
   cd "$SANDBOX/main-repo"
 
   wtr feat/new-parser
 
   assert_dir_exists "worktree directory created (slashes to dashes)" "$SANDBOX/feat-new-parser"
   assert_eq "has parser.txt from remote branch" "parser code" "$(cat "$SANDBOX/feat-new-parser/parser.txt")"
+  assert_eq "cd'd into worktree" "$SANDBOX/feat-new-parser" "$(pwd)"
 
   # Verify it's detached (no local branch named feat-new-parser)
   assert_branch_not_exists "no local branch created" "feat-new-parser"
 
   # cleanup
+  cd "$SANDBOX/main-repo"
   git worktree remove "$SANDBOX/feat-new-parser"
 }
 
@@ -200,7 +220,21 @@ test_wtr_custom_dir() {
   assert_eq "has parser.txt" "parser code" "$(cat "$SANDBOX/my-review/parser.txt")"
 
   # cleanup
+  cd "$SANDBOX/main-repo"
   git worktree remove "$SANDBOX/my-review"
+}
+
+test_wtr_stay() {
+  echo "test: wtr -s <branch> — detached worktree but stay in current directory"
+  cd "$SANDBOX/main-repo"
+
+  wtr -s feat/new-parser stay-review
+
+  assert_dir_exists "worktree created" "$SANDBOX/stay-review"
+  assert_eq "stayed in main repo" "$SANDBOX/main-repo" "$(pwd)"
+
+  # cleanup
+  git worktree remove "$SANDBOX/stay-review"
 }
 
 test_wtr_bad_branch() {
@@ -234,6 +268,7 @@ test_wtrm_deletes_branch() {
   cd "$SANDBOX/main-repo"
 
   wt to-remove
+  cd "$SANDBOX/main-repo"
   wtrm to-remove
 
   assert_dir_not_exists "worktree removed" "$SANDBOX/to-remove"
@@ -245,6 +280,7 @@ test_wtrm_keep_branch() {
   cd "$SANDBOX/main-repo"
 
   wt keep-branch-test
+  cd "$SANDBOX/main-repo"
   wtrm keep-branch-test -k
 
   assert_dir_not_exists "worktree removed" "$SANDBOX/keep-branch-test"
@@ -259,9 +295,9 @@ test_wtrm_force_delete() {
   cd "$SANDBOX/main-repo"
 
   wt unmerged-work
+  # wt already cd'd into the worktree
 
   # Add a commit that isn't merged to main so -d would refuse
-  cd "$SANDBOX/unmerged-work"
   echo "unmerged change" > unmerged.txt
   git add unmerged.txt
   git commit -m "unmerged work" >/dev/null 2>&1
@@ -293,7 +329,7 @@ test_wtcd() {
   echo "test: wtcd <name> — changes directory into worktree"
   cd "$SANDBOX/main-repo"
 
-  wt cd-target
+  wt -s cd-target
 
   wtcd cd-target
   assert_eq "pwd is worktree directory" "$SANDBOX/cd-target" "$(pwd)"
@@ -332,7 +368,7 @@ test_wtl() {
   echo "test: wtl — lists worktrees"
   cd "$SANDBOX/main-repo"
 
-  wt list-test
+  wt -s list-test
 
   local output
   output=$(wtl)
@@ -347,7 +383,7 @@ test_wtprune() {
   echo "test: wtprune — prunes stale entries"
   cd "$SANDBOX/main-repo"
 
-  wt prune-test
+  wt -s prune-test
 
   # Manually nuke the directory to simulate a stale worktree
   rm -rf "$SANDBOX/prune-test"
@@ -379,7 +415,7 @@ test_wtdir_change() {
   assert_eq "WT_DIR updated" "$SANDBOX/custom-dir" "$WT_DIR"
 
   # Create a worktree using the new WT_DIR
-  wt custom-wt
+  wt -s custom-wt
 
   assert_dir_exists "worktree in custom dir" "$SANDBOX/custom-dir/custom-wt"
   assert_branch_exists "branch created" "custom-wt"
@@ -393,7 +429,7 @@ test_wt_duplicate_branch() {
   echo "test: wt with existing branch name — git rejects it"
   cd "$SANDBOX/main-repo"
 
-  wt dup-test
+  wt -s dup-test
   local output
   output=$(wt dup-test 2>&1) || true
   assert_eq "git rejects duplicate" "true" "$(echo "$output" | grep -qi 'already exists\|fatal' && echo true || echo false)"
@@ -416,11 +452,15 @@ main() {
   echo ""
   test_wt_head
   echo ""
+  test_wt_stay
+  echo ""
   test_wt_no_args
   echo ""
   test_wtr_basic
   echo ""
   test_wtr_custom_dir
+  echo ""
+  test_wtr_stay
   echo ""
   test_wtr_bad_branch
   echo ""

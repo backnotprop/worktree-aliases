@@ -21,32 +21,54 @@ wtdir() {
 }
 
 # Create a worktree with a new branch off main (or a specified base).
+# Automatically cd's into the new worktree. Use -s to stay in the current directory.
 # Usage:
-#   wt fix-login          → branch "fix-login" in $WT_DIR/fix-login, based on main
-#   wt fix-login develop  → branch "fix-login" in $WT_DIR/fix-login, based on develop
-#   wt fix-login HEAD     → branch "fix-login" in $WT_DIR/fix-login, based on current commit
+#   wt fix-login          → branch "fix-login" in $WT_DIR/fix-login, based on main, cd into it
+#   wt fix-login develop  → same, based on develop
+#   wt fix-login HEAD     → same, based on current commit
+#   wt -s fix-login       → create but stay in current directory
 wt() {
+  local stay=false
+  if [ "${1:-}" = "-s" ]; then
+    stay=true
+    shift
+  fi
+
   if [ -z "${1:-}" ]; then
-    echo "Usage: wt <name> [base]"
+    echo "Usage: wt [-s] <name> [base]"
     echo "  Creates a worktree at $WT_DIR/<name> with branch <name> based on [base] (default: main)"
+    echo "  -s  Stay in current directory (default: cd into new worktree)"
     return 1
   fi
 
   local name="$1"
   local base="${2:-main}"
 
-  git worktree add -b "$name" "$WT_DIR/$name" "$base"
+  git worktree add -b "$name" "$WT_DIR/$name" "$base" || return 1
+
+  if [ "$stay" = false ]; then
+    cd "$WT_DIR/$name"
+  fi
 }
 
 # Create a detached worktree for reviewing a remote branch (no local branch created).
+# Automatically cd's into the new worktree. Use -s to stay in the current directory.
 # Usage:
-#   wtr feat/new-parser              → checks out origin/feat/new-parser in $WT_DIR/feat-new-parser
-#   wtr feat/new-parser my-review    → checks out origin/feat/new-parser in $WT_DIR/my-review
+#   wtr feat/new-parser              → checks out origin/feat/new-parser in $WT_DIR/feat-new-parser, cd into it
+#   wtr feat/new-parser my-review    → same, in $WT_DIR/my-review
+#   wtr -s feat/new-parser           → create but stay in current directory
 wtr() {
+  local stay=false
+  if [ "${1:-}" = "-s" ]; then
+    stay=true
+    shift
+  fi
+
   if [ -z "${1:-}" ]; then
-    echo "Usage: wtr <branch> [directory-name]"
+    echo "Usage: wtr [-s] <branch> [directory-name]"
     echo "  Creates a detached worktree at $WT_DIR/<directory-name> from origin/<branch>"
     echo "  If directory-name is omitted, uses the branch name (slashes become dashes)"
+    echo "  -s  Stay in current directory (default: cd into new worktree)"
     return 1
   fi
 
@@ -54,7 +76,11 @@ wtr() {
   local dir_name="${2:-${branch//\//-}}"
 
   git fetch origin "$branch" || { echo "Could not fetch origin/$branch"; return 1; }
-  git worktree add --detach "$WT_DIR/$dir_name" "origin/$branch"
+  git worktree add --detach "$WT_DIR/$dir_name" "origin/$branch" || return 1
+
+  if [ "$stay" = false ]; then
+    cd "$WT_DIR/$dir_name"
+  fi
 }
 
 # Remove a worktree and optionally delete its branch.
