@@ -1,5 +1,7 @@
 # worktree-aliases
 
+[Read - Simplifying Git Worktrees](https://backnotprop.com/blog/simplifying-git-worktrees/)
+
 Shell functions that reduce git worktree commands to a few keystrokes. No dependencies — just source a file.
 
 ## Install
