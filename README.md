@@ -38,33 +38,31 @@ source /path/to/worktree-aliases/worktree.sh
 
 ```bash
 wt fix-login
-# Creates branch "fix-login" in ../fix-login, based on main
 cd ../fix-login
+claude  # isolated session focused on this fix
 ```
 
 ### Branch off something other than main
 
 ```bash
 wt experiment develop
-# Creates branch "experiment" in ../experiment, based on develop
+cd ../experiment
+claude  # work against develop instead of main
 
 wt spike HEAD
-# Creates branch "spike" in ../spike, based on your current commit
+cd ../spike
+claude  # try a different approach from your current commit
 ```
 
 ### Review a teammate's PR
 
 ```bash
 wtr feat/new-parser
-# Fetches and checks out origin/feat/new-parser in ../feat-new-parser
-# No local branch created — nothing to clean up later
-
 cd ../feat-new-parser
-npm test
-# ... read code, run tests ...
+claude  # review the code, run tests, leave comments
 
 wtrm feat-new-parser
-# Removes the worktree, done
+# Done — no orphan branch to clean up
 ```
 
 ### Clean up when you're done
