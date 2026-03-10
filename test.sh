@@ -162,6 +162,23 @@ test_wt_head() {
   wtrm from-head
 }
 
+test_wt_slash_branch() {
+  echo "test: wt feat/thing — slash branch name, dashed directory"
+  cd "$SANDBOX/main-repo"
+
+  wt feat/thing
+
+  assert_dir_exists "worktree uses dashes" "$SANDBOX/feat-thing"
+  assert_branch_exists "branch keeps slashes" "feat/thing"
+  assert_eq "cd'd into worktree" "$SANDBOX/feat-thing" "$(pwd)"
+
+  # cleanup — wtrm should resolve the slashed branch name
+  cd "$SANDBOX/main-repo"
+  wtrm feat-thing
+
+  assert_branch_not_exists "slashed branch deleted" "feat/thing"
+}
+
 test_wt_stay() {
   echo "test: wt -s <name> — create worktree but stay in current directory"
   cd "$SANDBOX/main-repo"
@@ -451,6 +468,8 @@ main() {
   test_wt_custom_base
   echo ""
   test_wt_head
+  echo ""
+  test_wt_slash_branch
   echo ""
   test_wt_stay
   echo ""

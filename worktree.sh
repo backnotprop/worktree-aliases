@@ -24,6 +24,7 @@ wtdir() {
 # Automatically cd's into the new worktree. Use -s to stay in the current directory.
 # Usage:
 #   wt fix-login          → branch "fix-login" in $WT_DIR/fix-login, based on main, cd into it
+#   wt feat/new-parser    → branch "feat/new-parser" in $WT_DIR/feat-new-parser (slashes become dashes)
 #   wt fix-login develop  → same, based on develop
 #   wt fix-login HEAD     → same, based on current commit
 #   wt -s fix-login       → create but stay in current directory
@@ -42,12 +43,13 @@ wt() {
   fi
 
   local name="$1"
+  local dir_name="${name//\//-}"
   local base="${2:-main}"
 
-  git worktree add -b "$name" "$WT_DIR/$name" "$base" || return 1
+  git worktree add -b "$name" "$WT_DIR/$dir_name" "$base" || return 1
 
   if [ "$stay" = false ]; then
-    cd "$WT_DIR/$name"
+    cd "$WT_DIR/$dir_name"
   fi
 }
 
@@ -106,13 +108,17 @@ wtrm() {
     -f) force_delete=true ;;
   esac
 
+  # Resolve the actual branch name before removing (handles slash-to-dash mapping)
+  local branch_name
+  branch_name=$(git -C "$WT_DIR/$name" rev-parse --abbrev-ref HEAD 2>/dev/null)
+
   git worktree remove "$WT_DIR/$name" || return 1
 
-  if [ "$keep_branch" = false ]; then
+  if [ "$keep_branch" = false ] && [ -n "$branch_name" ] && [ "$branch_name" != "HEAD" ]; then
     if [ "$force_delete" = true ]; then
-      git branch -D "$name" 2>/dev/null
+      git branch -D "$branch_name" 2>/dev/null
     else
-      git branch -d "$name" 2>/dev/null
+      git branch -d "$branch_name" 2>/dev/null
     fi
   fi
 }

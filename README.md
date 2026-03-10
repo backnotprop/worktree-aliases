@@ -46,6 +46,15 @@ wt fix-login
 claude  # isolated session focused on this fix
 ```
 
+Slash-style branch names work too — the directory uses dashes:
+
+```bash
+wt feat/new-parser
+# Branch: feat/new-parser
+# Directory: ../feat-new-parser
+claude
+```
+
 ### Branch off something other than main
 
 ```bash
